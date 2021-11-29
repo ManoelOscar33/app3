@@ -46,6 +46,7 @@ export class BdService {
     return new Promise((resolve, reject) => {
       //consultar as publicacoes no database
       firebase.database().ref(`publicacoes/${btoa(emailUsuario)}`)
+        .orderByKey()
         .once('value')
         .then((snapshot: any) => {
           //console.log(snapshot.val())
@@ -55,31 +56,68 @@ export class BdService {
           snapshot.forEach((childSnapshot: any) => {
 
             let publicacao = childSnapshot.val();
+            publicacao.key = childSnapshot.key;
 
-            //consultar a url da imagem
-            firebase.storage().ref()
-              .child(`imagens/${childSnapshot.key}`)
-              .getDownloadURL()
-              .then((url: string) => {
-                publicacao.url_imagem = url
-
-                //consultar o nome do usuário
-                firebase.database().ref(`usuario_detalhe/${btoa(emailUsuario)}`)
-                  .once('value')
-                  .then((snapshot: any) => {
-                    
-                    publicacao.nome_usuario = snapshot.val().nome_usuario
-
-                    publicacoes.push(publicacao)
-                  })
-
-              })
+            publicacoes.push(publicacao)
           })
 
-          resolve(publicacoes)
+          //resolve(publicacoes)
+
+          return publicacoes.reverse();
         }) 
+        .then((publicacoes: any) => {
+          //consultar a url da imagem
+
+          publicacoes.forEach((publicacao: any) => {
+
+            firebase.storage().ref()
+            .child(`imagens/${publicacao.key}`)
+            .getDownloadURL()
+            .then((url: string) => {
+
+              publicacao.url_imagem = url
+
+              //consultar o nome do usuário
+              firebase.database().ref(`usuario_detalhe/${btoa(emailUsuario)}`)
+                .once('value')
+                .then((snapshot: any) => {
+                  
+                  publicacao.nome_usuario = snapshot.val().nome_usuario
+
+                })
+
+            })
+          });
+
+          resolve(publicacoes)
+          
+        })
     })
 
   }
   
 }
+
+
+/*
+  let publicacao = childSnapshot.val();
+
+  //consultar a url da imagem
+  firebase.storage().ref()
+    .child(`imagens/${childSnapshot.key}`)
+    .getDownloadURL()
+    .then((url: string) => {
+      publicacao.url_imagem = url
+
+      //consultar o nome do usuário
+      firebase.database().ref(`usuario_detalhe/${btoa(emailUsuario)}`)
+        .once('value')
+        .then((snapshot: any) => {
+          
+          publicacao.nome_usuario = snapshot.val().nome_usuario
+
+          publicacoes.push(publicacao)
+        })
+
+    })
+*/
